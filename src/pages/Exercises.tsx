@@ -25,7 +25,7 @@ const Exercises = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  const categories = ["all", "hiit", "chest", "back", "legs", "arms", "core", "full-body"];
+  const categories = ["all", "hiit", "chest", "back", "shoulders", "legs", "arms", "core", "full-body"];
   const difficulties = ["all", "beginner", "intermediate", "advanced"];
 
   useEffect(() => {
