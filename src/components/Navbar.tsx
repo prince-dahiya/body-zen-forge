@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Dumbbell, LogOut, Home, Activity, Weight, Flame, Timer, TrendingUp } from "lucide-react";
+import { Dumbbell, LogOut, Home, Activity, Weight, Flame, Timer, TrendingUp, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -42,6 +42,10 @@ export const Navbar = () => {
             <Link to="/workouts" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
               <Dumbbell className="h-4 w-4" />
               Workouts
+            </Link>
+            <Link to="/exercises" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
+              <Video className="h-4 w-4" />
+              Exercises
             </Link>
             <Link to="/hiit" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
               <Timer className="h-4 w-4" />

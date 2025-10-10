@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import BMI from "./pages/BMI";
 import Weight from "./pages/Weight";
 import Workouts from "./pages/Workouts";
+import Exercises from "./pages/Exercises";
 import HIIT from "./pages/HIIT";
 import Runs from "./pages/Runs";
 import Calories from "./pages/Calories";
@@ -27,9 +28,10 @@ const App = () => (
           <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
           <Route path="/bmi" element={<AuthGuard><BMI /></AuthGuard>} />
           <Route path="/weight" element={<AuthGuard><Weight /></AuthGuard>} />
-          <Route path="/workouts" element={<AuthGuard><Workouts /></AuthGuard>} />
-          <Route path="/hiit" element={<AuthGuard><HIIT /></AuthGuard>} />
-          <Route path="/runs" element={<AuthGuard><Runs /></AuthGuard>} />
+            <Route path="/workouts" element={<AuthGuard><Workouts /></AuthGuard>} />
+            <Route path="/exercises" element={<AuthGuard><Exercises /></AuthGuard>} />
+            <Route path="/hiit" element={<AuthGuard><HIIT /></AuthGuard>} />
+            <Route path="/runs" element={<AuthGuard><Runs /></AuthGuard>} />
           <Route path="/calories" element={<AuthGuard><Calories /></AuthGuard>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

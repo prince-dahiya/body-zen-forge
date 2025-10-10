@@ -61,30 +61,111 @@ export type Database = {
           },
         ]
       }
+      exercise_videos: {
+        Row: {
+          calories_burned: number | null
+          category: string
+          created_at: string | null
+          description: string | null
+          difficulty: string
+          duration: number
+          id: string
+          thumbnail_url: string | null
+          title: string
+          video_url: string
+        }
+        Insert: {
+          calories_burned?: number | null
+          category: string
+          created_at?: string | null
+          description?: string | null
+          difficulty: string
+          duration: number
+          id?: string
+          thumbnail_url?: string | null
+          title: string
+          video_url: string
+        }
+        Update: {
+          calories_burned?: number | null
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string
+          duration?: number
+          id?: string
+          thumbnail_url?: string | null
+          title?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
+      foods: {
+        Row: {
+          calories: number
+          carbs: number | null
+          created_at: string | null
+          fats: number | null
+          id: string
+          name: string
+          protein: number | null
+          serving_size: string | null
+        }
+        Insert: {
+          calories: number
+          carbs?: number | null
+          created_at?: string | null
+          fats?: number | null
+          id?: string
+          name: string
+          protein?: number | null
+          serving_size?: string | null
+        }
+        Update: {
+          calories?: number
+          carbs?: number | null
+          created_at?: string | null
+          fats?: number | null
+          id?: string
+          name?: string
+          protein?: number | null
+          serving_size?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          activity_level: string | null
           age: number | null
+          calorie_goal: number | null
           created_at: string | null
           full_name: string | null
           gender: string | null
+          goal: string | null
           height: number | null
           id: string
           updated_at: string | null
         }
         Insert: {
+          activity_level?: string | null
           age?: number | null
+          calorie_goal?: number | null
           created_at?: string | null
           full_name?: string | null
           gender?: string | null
+          goal?: string | null
           height?: number | null
           id: string
           updated_at?: string | null
         }
         Update: {
+          activity_level?: string | null
           age?: number | null
+          calorie_goal?: number | null
           created_at?: string | null
           full_name?: string | null
           gender?: string | null
+          goal?: string | null
           height?: number | null
           id?: string
           updated_at?: string | null

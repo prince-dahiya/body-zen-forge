@@ -7,35 +7,96 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Flame, Trash2 } from "lucide-react";
+import { Apple, Trash2, Search, TrendingDown, Target } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CalorieEntry {
   id: string;
   meal_name: string;
+  meal_type: string;
   calories: number;
-  protein?: number;
-  carbs?: number;
-  fats?: number;
-  meal_type?: string;
+  protein: number;
+  carbs: number;
+  fats: number;
   date: string;
+}
+
+interface Food {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  serving_size: string;
+}
+
+interface Profile {
+  calorie_goal: number | null;
+  goal: string | null;
+  activity_level: string | null;
 }
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"];
 
 const Calories = () => {
   const [mealName, setMealName] = useState("");
+  const [mealType, setMealType] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fats, setFats] = useState("");
-  const [mealType, setMealType] = useState<string>("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [entries, setEntries] = useState<CalorieEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [foods, setFoods] = useState<Food[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [todayCalories, setTodayCalories] = useState(0);
 
   useEffect(() => {
     loadEntries();
-  }, [date]);
+    loadFoods();
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    calculateTodayCalories();
+  }, [entries]);
+
+  const calculateTodayCalories = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const todayEntries = entries.filter(e => e.date === today);
+    const total = todayEntries.reduce((sum, e) => sum + e.calories, 0);
+    setTodayCalories(total);
+  };
+
+  const loadProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("calorie_goal, goal, activity_level")
+      .eq("id", user.id)
+      .single();
+
+    if (!error && data) {
+      setProfile(data);
+    }
+  };
+
+  const loadFoods = async () => {
+    const { data, error } = await supabase
+      .from("foods")
+      .select("*")
+      .order("name");
+
+    if (!error && data) {
+      setFoods(data);
+    }
+  };
 
   const loadEntries = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -45,8 +106,8 @@ const Calories = () => {
       .from("calorie_entries")
       .select("*")
       .eq("user_id", user.id)
-      .eq("date", date)
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false })
+      .limit(20);
 
     if (error) {
       toast.error("Failed to load calorie entries");
@@ -102,10 +163,22 @@ const Calories = () => {
     }
   };
 
-  const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
-  const totalProtein = entries.reduce((sum, entry) => sum + (entry.protein || 0), 0);
-  const totalCarbs = entries.reduce((sum, entry) => sum + (entry.carbs || 0), 0);
-  const totalFats = entries.reduce((sum, entry) => sum + (entry.fats || 0), 0);
+  const selectFood = (food: Food) => {
+    setMealName(food.name);
+    setCalories(food.calories.toString());
+    setProtein(food.protein?.toString() || "");
+    setCarbs(food.carbs?.toString() || "");
+    setFats(food.fats?.toString() || "");
+    setSearchQuery("");
+  };
+
+  const filteredFoods = foods.filter(f => 
+    f.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const calorieGoal = profile?.calorie_goal || 2000;
+  const calorieProgress = Math.min((todayCalories / calorieGoal) * 100, 100);
+  const remainingCalories = calorieGoal - todayCalories;
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,30 +186,136 @@ const Calories = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 rounded-lg bg-gradient-to-br from-accent to-orange-400">
-            <Flame className="h-6 w-6 text-accent-foreground" />
+            <Apple className="h-6 w-6 text-accent-foreground" />
           </div>
           <div>
             <h1 className="text-3xl font-bold">Calorie Tracker</h1>
-            <p className="text-muted-foreground">Monitor your daily nutrition</p>
+            <p className="text-muted-foreground">Monitor your daily nutrition and reach your goals</p>
           </div>
         </div>
 
+        {/* Daily Progress */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Today's Calories</CardDescription>
+              <CardTitle className="text-3xl">{todayCalories}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Progress value={calorieProgress} className="h-2" />
+              <p className="text-sm text-muted-foreground mt-2">
+                Goal: {calorieGoal} cal/day
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Remaining</CardDescription>
+              <CardTitle className="text-3xl flex items-center gap-2">
+                <Target className="h-6 w-6" />
+                {remainingCalories > 0 ? remainingCalories : 0}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {remainingCalories > 0 ? "Calories left today" : "Goal reached!"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Your Goal</CardDescription>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <TrendingDown className="h-5 w-5" />
+                {profile?.goal?.replace("-", " ").toUpperCase() || "Not set"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Activity: {profile?.activity_level || "Not set"}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Add Entry Card */}
+          {/* Log Meal Card */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Log Meal</CardTitle>
-              <CardDescription>Add a new calorie entry</CardDescription>
+              <CardDescription>Track your food intake</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Meal Name</Label>
-                <Input
-                  placeholder="Grilled Chicken Salad"
-                  value={mealName}
-                  onChange={(e) => setMealName(e.target.value)}
-                />
-              </div>
+              <Tabs defaultValue="manual" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="manual">Manual</TabsTrigger>
+                  <TabsTrigger value="database">Food Database</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="database" className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Search Foods</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search for foods..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  {searchQuery && (
+                    <div className="max-h-64 overflow-y-auto border rounded-lg">
+                      {filteredFoods.length === 0 ? (
+                        <p className="p-4 text-sm text-muted-foreground text-center">
+                          No foods found
+                        </p>
+                      ) : (
+                        filteredFoods.map((food) => (
+                          <button
+                            key={food.id}
+                            onClick={() => selectFood(food)}
+                            className="w-full p-3 text-left hover:bg-accent transition-colors border-b last:border-b-0"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium">{food.name}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {food.serving_size}
+                                </p>
+                              </div>
+                              <span className="text-sm font-semibold">
+                                {food.calories} cal
+                              </span>
+                            </div>
+                            <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                              <span>P: {food.protein}g</span>
+                              <span>C: {food.carbs}g</span>
+                              <span>F: {food.fats}g</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="manual" className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Meal Name</Label>
+                    <Input
+                      placeholder="e.g., Grilled Chicken"
+                      value={mealName}
+                      onChange={(e) => setMealName(e.target.value)}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+
               <div className="space-y-2">
                 <Label>Meal Type</Label>
                 <Select value={mealType} onValueChange={setMealType}>
@@ -152,6 +331,7 @@ const Calories = () => {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label>Calories</Label>
                 <Input
@@ -161,6 +341,7 @@ const Calories = () => {
                   onChange={(e) => setCalories(e.target.value)}
                 />
               </div>
+
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-2">
                   <Label>Protein (g)</Label>
@@ -190,6 +371,7 @@ const Calories = () => {
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Input
@@ -198,6 +380,7 @@ const Calories = () => {
                   onChange={(e) => setDate(e.target.value)}
                 />
               </div>
+
               <Button 
                 onClick={addEntry}
                 disabled={loading}
@@ -208,102 +391,55 @@ const Calories = () => {
             </CardContent>
           </Card>
 
-          {/* Daily Summary & History */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Daily Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Calories
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold text-accent">{totalCalories}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Protein
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{totalProtein.toFixed(1)}g</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Carbs
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{totalCarbs.toFixed(1)}g</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Fats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{totalFats.toFixed(1)}g</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Today's Meals */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Today's Meals</CardTitle>
-                <CardDescription>
-                  {new Date(date).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {entries.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No meals logged for this day yet.
-                    </p>
-                  ) : (
-                    entries.map((entry) => (
-                      <div 
-                        key={entry.id}
-                        className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {entry.meal_type && (
-                              <span className="px-2 py-1 text-xs rounded-full bg-accent/10 text-accent">
-                                {entry.meal_type}
-                              </span>
-                            )}
-                            <p className="font-medium">{entry.meal_name}</p>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {entry.calories} cal
-                            {entry.protein && ` • P: ${entry.protein}g`}
-                            {entry.carbs && ` • C: ${entry.carbs}g`}
-                            {entry.fats && ` • F: ${entry.fats}g`}
-                          </p>
+          {/* Meal History */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Meal History</CardTitle>
+              <CardDescription>Your recent meals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {entries.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No meals logged yet. Start tracking your nutrition!
+                  </p>
+                ) : (
+                  entries.map((entry) => (
+                    <div 
+                      key={entry.id}
+                      className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          {entry.meal_type && (
+                            <span className="px-2 py-1 text-xs rounded-full bg-accent/10 text-accent">
+                              {entry.meal_type}
+                            </span>
+                          )}
+                          <p className="font-medium">{entry.meal_name}</p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteEntry(entry.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <p className="text-sm text-muted-foreground">
+                          {entry.calories} cal
+                          {entry.protein && ` • P: ${entry.protein}g`}
+                          {entry.carbs && ` • C: ${entry.carbs}g`}
+                          {entry.fats && ` • F: ${entry.fats}g`}
+                          {" • "}
+                          {new Date(entry.date).toLocaleDateString()}
+                        </p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteEntry(entry.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
