@@ -84,7 +84,7 @@ const Exercises = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Exercise Library</h1>
-            <p className="text-muted-foreground">Follow along with guided workout videos</p>
+            <p className="text-muted-foreground">Follow along with guided workout videos & animated demos</p>
           </div>
         </div>
 
@@ -135,14 +135,22 @@ const Exercises = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVideos.map((video) => (
               <Card key={video.id} className="overflow-hidden hover:border-primary transition-all">
-                <div className="aspect-video bg-muted">
-                  <iframe
-                    src={video.video_url}
-                    title={video.title}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                <div className="aspect-video bg-gradient-to-br from-primary/5 to-secondary/5 relative flex items-center justify-center">
+                  {video.video_url.startsWith('http') ? (
+                    <iframe
+                      src={video.video_url}
+                      title={video.title}
+                      className="w-full h-full absolute inset-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="animate-pulse flex flex-col items-center justify-center p-4 text-center">
+                      <Video className="h-12 w-12 text-primary mb-2" />
+                      <p className="text-sm font-medium">Exercise Demo</p>
+                      <p className="text-xs text-muted-foreground mt-1">{video.title}</p>
+                    </div>
+                  )}
                 </div>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2 mb-2">

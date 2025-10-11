@@ -36,6 +36,10 @@ interface Profile {
   calorie_goal: number | null;
   goal: string | null;
   activity_level: string | null;
+  age: number | null;
+  gender: string | null;
+  height: number | null;
+  full_name: string | null;
 }
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"];
@@ -59,6 +63,7 @@ const Calories = () => {
     loadEntries();
     loadFoods();
     loadProfile();
+    loadCurrentWeight();
   }, []);
 
   useEffect(() => {
@@ -78,13 +83,94 @@ const Calories = () => {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("calorie_goal, goal, activity_level")
+      .select("*")
       .eq("id", user.id)
       .single();
 
     if (!error && data) {
       setProfile(data);
     }
+  };
+
+  const loadCurrentWeight = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("weight_entries")
+      .select("weight")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data) {
+      setCurrentWeight(data.weight);
+    }
+  };
+
+  const calculateCalories = () => {
+    const { age, gender, height } = profile || {};
+    const weight = currentWeight;
+    
+    if (!age || !gender || !height || !weight) {
+      toast.error("Please add your age, gender, height in Settings and log your current weight first");
+      return;
+    }
+
+    // BMR calculation using Mifflin-St Jeor Equation
+    let bmr: number;
+    if (gender === "male") {
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+
+    // Activity level multipliers
+    const activityMultipliers: Record<string, number> = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      "very-active": 1.9,
+    };
+
+    const multiplier = activityMultipliers[profile?.activity_level || "sedentary"];
+    let tdee = bmr * multiplier;
+
+    // Goal adjustments
+    if (profile?.goal === "lose-weight") {
+      tdee -= 500;
+    } else if (profile?.goal === "gain-muscle") {
+      tdee += 300;
+    }
+
+    setCalculatedCalories(Math.round(tdee));
+    setProfile({ ...profile, calorie_goal: Math.round(tdee) } as Profile);
+    toast.success(`Calculated: ${Math.round(tdee)} calories/day`);
+  };
+
+  const saveCalorieGoal = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        calorie_goal: profile?.calorie_goal,
+        activity_level: profile?.activity_level,
+        goal: profile?.goal,
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Failed to save calorie goal");
+    } else {
+      toast.success("Calorie goal saved!");
+      setShowSettings(false);
+    }
+    setLoading(false);
   };
 
   const loadFoods = async () => {
