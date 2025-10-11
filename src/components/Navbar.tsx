@@ -31,38 +31,6 @@ export const Navbar = () => {
               <Home className="h-4 w-4" />
               Dashboard
             </Link>
-            <Link to="/bmi" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <TrendingUp className="h-4 w-4" />
-              BMI
-            </Link>
-            <Link to="/weight" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Weight className="h-4 w-4" />
-              Weight
-            </Link>
-            <Link to="/workouts" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Dumbbell className="h-4 w-4" />
-              Workouts
-            </Link>
-            <Link to="/exercises" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Video className="h-4 w-4" />
-              Exercises
-            </Link>
-            <Link to="/hiit" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Timer className="h-4 w-4" />
-              HIIT
-            </Link>
-            <Link to="/runs" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Activity className="h-4 w-4" />
-              Runs
-            </Link>
-            <Link to="/calories" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Flame className="h-4 w-4" />
-              Calories
-            </Link>
-            <Link to="/settings" className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
-              <Settings className="h-4 w-4" />
-              Settings
-            </Link>
           </div>
 
           <Button 

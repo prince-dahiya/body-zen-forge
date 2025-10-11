@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Apple, Trash2, Search, TrendingDown, Target } from "lucide-react";
+import { Apple, Trash2, Search, TrendingDown, Target, Flame, TrendingUp, Activity, Settings } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -58,6 +58,9 @@ const Calories = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [todayCalories, setTodayCalories] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [calculatedCalories, setCalculatedCalories] = useState<number | null>(null);
+  const [currentWeight, setCurrentWeight] = useState<number | null>(null);
 
   useEffect(() => {
     loadEntries();
@@ -281,11 +284,24 @@ const Calories = () => {
         </div>
 
         {/* Daily Progress */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Today's Calories</CardDescription>
-              <CardTitle className="text-3xl">{todayCalories}</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Today's Calories</CardTitle>
+              <Flame className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{todayCalories}</div>
+              <p className="text-xs text-muted-foreground">
+                calories consumed
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Progress</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <Progress value={calorieProgress} className="h-2" />
@@ -296,35 +312,119 @@ const Calories = () => {
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Remaining</CardDescription>
-              <CardTitle className="text-3xl flex items-center gap-2">
-                <Target className="h-6 w-6" />
-                {remainingCalories > 0 ? remainingCalories : 0}
-              </CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Remaining</CardTitle>
+              <Target className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
+              <div className="text-2xl font-bold">{remainingCalories}</div>
               <p className="text-sm text-muted-foreground">
                 {remainingCalories > 0 ? "Calories left today" : "Goal reached!"}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardDescription>Your Goal</CardDescription>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <TrendingDown className="h-5 w-5" />
-                {profile?.goal?.replace("-", " ").toUpperCase() || "Not set"}
-              </CardTitle>
+          <Card className="cursor-pointer hover:border-primary transition-all" onClick={() => setShowSettings(!showSettings)}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Settings</CardTitle>
+              <Settings className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Activity: {profile?.activity_level || "Not set"}
+              <div className="text-sm font-medium">Calorie Goal</div>
+              <p className="text-xs text-muted-foreground">
+                Click to adjust
               </p>
             </CardContent>
           </Card>
         </div>
+
+        {showSettings && (
+          <Card className="mb-6 border-primary/50">
+            <CardHeader>
+              <CardTitle>Calorie Goal Settings</CardTitle>
+              <CardDescription>Customize your daily calorie target</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Fitness Goal</Label>
+                  <Select 
+                    value={profile?.goal || ""} 
+                    onValueChange={(value) => setProfile({ ...profile, goal: value } as Profile)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select goal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lose-weight">Lose Weight</SelectItem>
+                      <SelectItem value="maintain">Maintain Weight</SelectItem>
+                      <SelectItem value="gain-muscle">Gain Muscle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Activity Level
+                  </Label>
+                  <Select 
+                    value={profile?.activity_level || ""} 
+                    onValueChange={(value) => setProfile({ ...profile, activity_level: value } as Profile)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select activity level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sedentary">Sedentary</SelectItem>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="moderate">Moderate</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="very-active">Very Active</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+                <p className="text-sm font-medium">Auto-Calculate Calories</p>
+                <p className="text-xs text-muted-foreground">
+                  Based on your profile, current weight, and goals
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={calculateCalories}
+                >
+                  Calculate My Calories
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Daily Calorie Target</Label>
+                <Input
+                  type="number"
+                  placeholder="2000"
+                  value={profile?.calorie_goal || ""}
+                  onChange={(e) => setProfile({ ...profile, calorie_goal: parseInt(e.target.value) } as Profile)}
+                />
+                {calculatedCalories && (
+                  <p className="text-xs text-primary">
+                    ✓ Calculated: {calculatedCalories} cal/day
+                  </p>
+                )}
+              </div>
+
+              <Button 
+                onClick={saveCalorieGoal}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "Saving..." : "Save Calorie Goal"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Log Meal Card */}

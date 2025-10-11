@@ -7,15 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Target, TrendingDown, Activity } from "lucide-react";
+import { Settings as SettingsIcon, User } from "lucide-react";
 
 interface Profile {
   full_name: string;
   age: number;
   gender: string;
   height: number;
-  weight?: number;
-  calorie_goal: number;
   activity_level: string;
   goal: string;
 }
@@ -23,7 +21,6 @@ interface Profile {
 const Settings = () => {
   const [profile, setProfile] = useState<Partial<Profile>>({});
   const [loading, setLoading] = useState(false);
-  const [calculatedCalories, setCalculatedCalories] = useState<number | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -44,46 +41,6 @@ const Settings = () => {
     }
   };
 
-  const calculateCalories = () => {
-    const { age, gender, height, weight } = profile;
-    
-    if (!age || !gender || !height || !weight) {
-      toast.error("Please fill in all basic information first");
-      return;
-    }
-
-    // BMR calculation using Mifflin-St Jeor Equation
-    let bmr: number;
-    if (gender === "male") {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
-
-    // Activity level multipliers
-    const activityMultipliers: Record<string, number> = {
-      sedentary: 1.2,
-      light: 1.375,
-      moderate: 1.55,
-      active: 1.725,
-      "very-active": 1.9,
-    };
-
-    const multiplier = activityMultipliers[profile.activity_level || "sedentary"];
-    let tdee = bmr * multiplier;
-
-    // Goal adjustments
-    if (profile.goal === "lose-weight") {
-      tdee -= 500; // 500 calorie deficit for weight loss
-    } else if (profile.goal === "gain-muscle") {
-      tdee += 300; // 300 calorie surplus for muscle gain
-    }
-
-    setCalculatedCalories(Math.round(tdee));
-    setProfile({ ...profile, calorie_goal: Math.round(tdee) });
-    toast.success(`Calculated: ${Math.round(tdee)} calories/day`);
-  };
-
   const saveProfile = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -96,7 +53,6 @@ const Settings = () => {
         age: profile.age,
         gender: profile.gender,
         height: profile.height,
-        calorie_goal: profile.calorie_goal,
         activity_level: profile.activity_level,
         goal: profile.goal,
       })
@@ -119,17 +75,19 @@ const Settings = () => {
             <SettingsIcon className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">Customize your fitness goals</p>
+            <h1 className="text-3xl font-bold">Profile Settings</h1>
+            <p className="text-muted-foreground">Manage your personal information</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Basic Information */}
+        <div className="max-w-2xl">
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Your personal details</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Basic Information
+              </CardTitle>
+              <CardDescription>Update your profile details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -177,24 +135,9 @@ const Settings = () => {
                   onChange={(e) => setProfile({ ...profile, height: parseFloat(e.target.value) })}
                 />
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Fitness Goals */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Fitness Goals
-              </CardTitle>
-              <CardDescription>Set your targets</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4" />
-                  Goal
-                </Label>
+                <Label>Fitness Goal</Label>
                 <Select 
                   value={profile.goal} 
                   onValueChange={(value) => setProfile({ ...profile, goal: value })}
@@ -211,10 +154,7 @@ const Settings = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Activity Level
-                </Label>
+                <Label>Activity Level</Label>
                 <Select 
                   value={profile.activity_level} 
                   onValueChange={(value) => setProfile({ ...profile, activity_level: value })}
@@ -232,63 +172,18 @@ const Settings = () => {
                 </Select>
               </div>
 
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                <p className="text-sm font-medium">Need help calculating?</p>
-                <p className="text-xs text-muted-foreground">
-                  We'll calculate your daily calorie target based on your information and goals.
-                </p>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={calculateCalories}
-                >
-                  Calculate My Calories
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Calorie Target */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Daily Calorie Target</CardTitle>
-              <CardDescription>
-                Set your daily calorie goal or use our calculator
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Calories per Day</Label>
-                <Input
-                  type="number"
-                  placeholder="2000"
-                  value={profile.calorie_goal || ""}
-                  onChange={(e) => setProfile({ ...profile, calorie_goal: parseInt(e.target.value) })}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {profile.goal === "lose-weight" && "💡 For weight loss: 500 cal deficit recommended"}
-                  {profile.goal === "gain-muscle" && "💡 For muscle gain: 300 cal surplus recommended"}
-                  {profile.goal === "maintain" && "💡 For maintenance: match your TDEE"}
+              <div className="p-4 rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground">
+                  💡 Tip: Set your calorie goals in the <strong>Calories</strong> page
                 </p>
               </div>
-
-              {calculatedCalories && (
-                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                  <p className="text-sm font-medium text-primary">
-                    ✓ Calculated: {calculatedCalories} calories/day
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Based on your age, gender, height, activity level, and goal
-                  </p>
-                </div>
-              )}
 
               <Button 
                 onClick={saveProfile}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-primary to-secondary"
+                className="w-full"
               >
-                {loading ? "Saving..." : "Save Settings"}
+                {loading ? "Saving..." : "Save Profile"}
               </Button>
             </CardContent>
           </Card>
