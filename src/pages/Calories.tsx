@@ -61,6 +61,9 @@ const Calories = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [calculatedCalories, setCalculatedCalories] = useState<number | null>(null);
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
+  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+  const [quantity, setQuantity] = useState("100");
+  const [newWeight, setNewWeight] = useState("");
 
   useEffect(() => {
     loadEntries();
@@ -164,6 +167,9 @@ const Calories = () => {
         calorie_goal: profile?.calorie_goal,
         activity_level: profile?.activity_level,
         goal: profile?.goal,
+        age: profile?.age,
+        gender: profile?.gender,
+        height: profile?.height,
       })
       .eq("id", user.id);
 
@@ -172,6 +178,27 @@ const Calories = () => {
     } else {
       toast.success("Calorie goal saved!");
       setShowSettings(false);
+    }
+    setLoading(false);
+  };
+
+  const quickLogWeight = async () => {
+    if (!newWeight) {
+      toast.error("Enter weight first");
+      return;
+    }
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from("weight_entries")
+      .insert({ user_id: user.id, weight: parseFloat(newWeight), date: new Date().toISOString().split("T")[0] });
+    if (error) {
+      toast.error("Failed to log weight");
+    } else {
+      toast.success("Weight logged");
+      setCurrentWeight(parseFloat(newWeight));
+      setNewWeight("");
     }
     setLoading(false);
   };
@@ -253,7 +280,9 @@ const Calories = () => {
   };
 
   const selectFood = (food: Food) => {
+    setSelectedFood(food);
     setMealName(food.name);
+    setQuantity("100");
     setCalories(food.calories.toString());
     setProtein(food.protein?.toString() || "");
     setCarbs(food.carbs?.toString() || "");
@@ -264,6 +293,16 @@ const Calories = () => {
   const filteredFoods = foods.filter(f => 
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  useEffect(() => {
+    if (!selectedFood) return;
+    const grams = parseFloat(quantity || "0");
+    const factor = grams > 0 ? grams / 100 : 0;
+    setCalories(Math.round(selectedFood.calories * factor).toString());
+    setProtein(selectedFood.protein ? (Number(selectedFood.protein) * factor).toFixed(1) : "");
+    setCarbs(selectedFood.carbs ? (Number(selectedFood.carbs) * factor).toFixed(1) : "");
+    setFats(selectedFood.fats ? (Number(selectedFood.fats) * factor).toFixed(1) : "");
+  }, [selectedFood, quantity]);
 
   const calorieGoal = profile?.calorie_goal || 2000;
   const calorieProgress = Math.min((todayCalories / calorieGoal) * 100, 100);
@@ -345,6 +384,36 @@ const Calories = () => {
               <CardDescription>Customize your daily calorie target</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Age</Label>
+                  <Input type="number" placeholder="e.g., 28" value={profile?.age ?? ""} onChange={(e) => setProfile({ ...profile, age: parseInt(e.target.value || "0") || null } as Profile)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Select value={profile?.gender || ""} onValueChange={(value) => setProfile({ ...profile, gender: value } as Profile)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Height (cm)</Label>
+                  <Input type="number" placeholder="e.g., 175" value={profile?.height ?? ""} onChange={(e) => setProfile({ ...profile, height: parseFloat(e.target.value || "0") || null } as Profile)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quick Log Weight (kg)</Label>
+                  <div className="flex gap-2">
+                    <Input type="number" placeholder="e.g., 70" value={newWeight} onChange={(e) => setNewWeight(e.target.value)} />
+                    <Button variant="secondary" onClick={quickLogWeight} disabled={loading}>Log</Button>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Fitness Goal</Label>
@@ -516,6 +585,17 @@ const Calories = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Quantity (g)</Label>
+                <Input
+                  type="number"
+                  placeholder="100"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Per 100g basis when selecting from database</p>
               </div>
 
               <div className="space-y-2">

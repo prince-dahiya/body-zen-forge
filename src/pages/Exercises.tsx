@@ -136,14 +136,28 @@ const Exercises = () => {
             {filteredVideos.map((video) => (
               <Card key={video.id} className="overflow-hidden hover:border-primary transition-all">
                 <div className="aspect-video bg-gradient-to-br from-primary/5 to-secondary/5 relative flex items-center justify-center">
-                  {video.video_url.startsWith('http') ? (
-                    <iframe
-                      src={video.video_url}
-                      title={video.title}
-                      className="w-full h-full absolute inset-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+                  {/^https?:\/\//.test(video.video_url) ? (
+                    video.video_url.includes('youtube.com/embed') ? (
+                      <iframe
+                        src={video.video_url}
+                        title={video.title}
+                        className="w-full h-full absolute inset-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : video.video_url.toLowerCase().includes('.mp4') ? (
+                      <video className="w-full h-full absolute inset-0" controls preload="metadata">
+                        <source src={video.video_url} type="video/mp4" />
+                      </video>
+                    ) : video.video_url.toLowerCase().includes('.gif') ? (
+                      <img src={video.video_url} alt={video.title} className="w-full h-full object-cover absolute inset-0" />
+                    ) : (
+                      <div className="animate-pulse flex flex-col items-center justify-center p-4 text-center">
+                        <Video className="h-12 w-12 text-primary mb-2" />
+                        <p className="text-sm font-medium">Exercise Demo</p>
+                        <p className="text-xs text-muted-foreground mt-1">{video.title}</p>
+                      </div>
+                    )
                   ) : (
                     <div className="animate-pulse flex flex-col items-center justify-center p-4 text-center">
                       <Video className="h-12 w-12 text-primary mb-2" />
