@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,11 +20,18 @@ interface ExerciseVideo {
 }
 
 const Exercises = () => {
+  const [searchParams] = useSearchParams();
   const [videos, setVideos] = useState<ExerciseVideo[]>([]);
   const [filteredVideos, setFilteredVideos] = useState<ExerciseVideo[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const filterParam = searchParams.get("filter");
+    const durationParam = searchParams.get("duration");
+    if (filterParam) setSelectedCategory(filterParam);
+  }, [searchParams]);
 
   const categories = ["all", "hiit", "chest", "back", "shoulders", "legs", "arms", "core", "full-body"];
   const difficulties = ["all", "beginner", "intermediate", "advanced"];
@@ -53,6 +61,7 @@ const Exercises = () => {
 
   const filterVideos = () => {
     let filtered = videos;
+    const durationParam = searchParams.get("duration");
 
     if (selectedCategory !== "all") {
       filtered = filtered.filter(v => v.category === selectedCategory);
@@ -60,6 +69,11 @@ const Exercises = () => {
 
     if (selectedDifficulty !== "all") {
       filtered = filtered.filter(v => v.difficulty === selectedDifficulty);
+    }
+
+    if (durationParam) {
+      const targetDuration = parseInt(durationParam);
+      filtered = filtered.filter(v => v.duration === targetDuration);
     }
 
     setFilteredVideos(filtered);

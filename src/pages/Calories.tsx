@@ -64,6 +64,9 @@ const Calories = () => {
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [quantity, setQuantity] = useState("100");
   const [newWeight, setNewWeight] = useState("");
+  const [targetWeightLoss, setTargetWeightLoss] = useState("");
+  const [timeframeDays, setTimeframeDays] = useState("");
+  const [calculatedTDEE, setCalculatedTDEE] = useState<number | null>(null);
 
   useEffect(() => {
     loadEntries();
@@ -455,7 +458,7 @@ const Calories = () => {
                 </div>
               </div>
 
-              <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+              <div className="p-4 rounded-lg bg-muted/50 space-y-3">
                 <p className="text-sm font-medium">Auto-Calculate Calories</p>
                 <p className="text-xs text-muted-foreground">
                   Based on your profile, current weight, and goals
@@ -465,8 +468,74 @@ const Calories = () => {
                   className="w-full"
                   onClick={calculateCalories}
                 >
-                  Calculate My Calories
+                  Calculate My TDEE
                 </Button>
+
+                {calculatedTDEE && (
+                  <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                    <h4 className="font-semibold text-sm">Your Daily Calorie Targets:</h4>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                        <span className="flex items-center gap-2">
+                          <TrendingDown className="h-4 w-4 text-green-500" />
+                          <span>To Lose Weight</span>
+                        </span>
+                        <span className="font-bold text-green-500">{calculatedTDEE - 500} cal/day</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6">500 cal deficit daily</p>
+
+                      <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                        <span className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-blue-500" />
+                          <span>To Maintain</span>
+                        </span>
+                        <span className="font-bold text-blue-500">{calculatedTDEE} cal/day</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6">Your maintenance calories</p>
+
+                      <div className="flex justify-between items-center p-2 rounded bg-background/50">
+                        <span className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-orange-500" />
+                          <span>To Gain Muscle</span>
+                        </span>
+                        <span className="font-bold text-orange-500">{calculatedTDEE + 300} cal/day</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6">300 cal surplus daily</p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t space-y-3">
+                      <p className="text-xs font-medium">Weight Loss Timeline Calculator</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Target kg loss"
+                          value={targetWeightLoss}
+                          onChange={(e) => setTargetWeightLoss(e.target.value)}
+                          className="text-sm"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="In days"
+                          value={timeframeDays}
+                          onChange={(e) => setTimeframeDays(e.target.value)}
+                          className="text-sm"
+                        />
+                      </div>
+                      {targetWeightLoss && timeframeDays && parseFloat(targetWeightLoss) > 0 && parseInt(timeframeDays) > 0 && (
+                        <div className="p-2 rounded bg-accent/10 text-xs">
+                          <p className="font-medium">To lose {targetWeightLoss}kg in {timeframeDays} days:</p>
+                          <p className="mt-1">
+                            Daily deficit needed: <span className="font-bold">{Math.round((parseFloat(targetWeightLoss) * 7700) / parseInt(timeframeDays))}</span> cal/day
+                          </p>
+                          <p className="mt-1">
+                            Target intake: <span className="font-bold text-primary">{Math.round(calculatedTDEE - (parseFloat(targetWeightLoss) * 7700) / parseInt(timeframeDays))}</span> cal/day
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
