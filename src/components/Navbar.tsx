@@ -51,7 +51,7 @@ export const Navbar = () => {
                   <span>Quick Workout</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
                 <DropdownMenuLabel>HIIT Workouts</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => startWorkout("7")}>
                   <Play className="h-4 w-4 mr-2" />
