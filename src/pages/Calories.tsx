@@ -64,7 +64,7 @@ const Calories = () => {
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [quantity, setQuantity] = useState("100");
   const [newWeight, setNewWeight] = useState("");
-  const [targetWeightLoss, setTargetWeightLoss] = useState("");
+  const [targetWeight, setTargetWeight] = useState("");
   const [timeframeDays, setTimeframeDays] = useState("");
   const [calculatedTDEE, setCalculatedTDEE] = useState<number | null>(null);
   const [timeframeUnit, setTimeframeUnit] = useState("days");
@@ -476,35 +476,44 @@ const Calories = () => {
                     </div>
 
                     <div className="p-4 rounded-lg bg-accent/5 border border-accent/20 space-y-3">
-                      <p className="font-semibold text-sm">Set Your Goal Timeline</p>
+                      <p className="font-semibold text-sm">Set Your Weight Goal</p>
                       <p className="text-xs text-muted-foreground">
-                        How much weight do you want to lose/gain and in what timeframe?
+                        Enter your current and target weight to get personalized calorie recommendations
                       </p>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-2">
-                          <Label className="text-xs">Target Weight Change (kg)</Label>
+                          <Label className="text-xs">Current Weight (kg)</Label>
                           <Input
                             type="number"
-                            placeholder="e.g., 5"
-                            value={targetWeightLoss}
-                            onChange={(e) => setTargetWeightLoss(e.target.value)}
+                            placeholder="88"
+                            value={currentWeight || ""}
+                            onChange={(e) => setCurrentWeight(parseFloat(e.target.value) || null)}
                             className="text-sm"
                           />
-                          <p className="text-xs text-muted-foreground">Use positive for gain, negative for loss</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Target Weight (kg)</Label>
+                          <Input
+                            type="number"
+                            placeholder="83"
+                            value={targetWeight}
+                            onChange={(e) => setTargetWeight(e.target.value)}
+                            className="text-sm"
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs">Timeframe</Label>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1">
                             <Input
                               type="number"
-                              placeholder="30"
+                              placeholder="2"
                               value={timeframeDays}
                               onChange={(e) => setTimeframeDays(e.target.value)}
-                              className="text-sm"
+                              className="text-sm w-16"
                             />
                             <Select value={timeframeUnit} onValueChange={setTimeframeUnit}>
-                              <SelectTrigger className="w-24">
+                              <SelectTrigger className="w-20">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-popover z-50">
@@ -517,46 +526,72 @@ const Calories = () => {
                         </div>
                       </div>
                       
-                      {targetWeightLoss && timeframeDays && parseFloat(targetWeightLoss) !== 0 && parseInt(timeframeDays) > 0 && (() => {
-                        const weightChange = parseFloat(targetWeightLoss);
+                      {currentWeight && targetWeight && timeframeDays && parseFloat(targetWeight) !== currentWeight && parseInt(timeframeDays) > 0 && (() => {
+                        const weightChange = parseFloat(targetWeight) - currentWeight;
                         let days = parseInt(timeframeDays);
                         if (timeframeUnit === "weeks") days *= 7;
                         if (timeframeUnit === "months") days *= 30;
                         
+                        // Validate reasonable goals
+                        const weeklyChange = (weightChange / days) * 7;
+                        const isExtreme = Math.abs(weeklyChange) > 1.5;
+                        
                         const dailyCalorieAdjustment = Math.round((weightChange * 7700) / days);
-                        const targetCalories = calculatedTDEE + dailyCalorieAdjustment;
+                        const loseCalories = calculatedTDEE - 500; // Standard 500 cal deficit
+                        const maintainCalories = calculatedTDEE;
+                        const gainCalories = calculatedTDEE + 300; // Standard 300 cal surplus
+                        const customCalories = calculatedTDEE + dailyCalorieAdjustment;
+                        
                         const isLoss = weightChange < 0;
                         
                         return (
                           <div className="mt-3 space-y-3">
-                            <div className="p-3 rounded-lg bg-background border space-y-2">
-                              <p className="font-semibold text-sm">
-                                {isLoss ? "Weight Loss" : "Weight Gain"} Plan
-                              </p>
+                            {isExtreme && (
+                              <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                                ⚠️ Warning: Losing/gaining more than 1.5kg per week is not recommended for health
+                              </div>
+                            )}
+                            
+                            <div className="p-3 rounded-lg bg-background border space-y-3">
+                              <div className="flex items-center justify-between">
+                                <p className="font-semibold text-sm">Your Goal</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {currentWeight}kg → {targetWeight}kg ({weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)}kg)
+                                </p>
+                              </div>
+                              
                               <div className="grid grid-cols-3 gap-2 text-xs">
                                 <div className="p-2 rounded bg-green-500/10 border border-green-500/20">
-                                  <p className="text-muted-foreground mb-1">To {isLoss ? "Lose" : "Gain"}</p>
-                                  <p className="font-bold text-sm">{targetCalories} cal/day</p>
-                                  <p className="text-muted-foreground mt-1">
-                                    {isLoss ? `${Math.abs(dailyCalorieAdjustment)} deficit` : `${dailyCalorieAdjustment} surplus`}
-                                  </p>
+                                  <p className="text-muted-foreground mb-1">To Lose Weight</p>
+                                  <p className="font-bold text-sm">{loseCalories} cal/day</p>
+                                  <p className="text-muted-foreground mt-1">-500 cal deficit</p>
                                 </div>
                                 <div className="p-2 rounded bg-blue-500/10 border border-blue-500/20">
                                   <p className="text-muted-foreground mb-1">To Maintain</p>
-                                  <p className="font-bold text-sm">{calculatedTDEE} cal/day</p>
+                                  <p className="font-bold text-sm">{maintainCalories} cal/day</p>
                                   <p className="text-muted-foreground mt-1">No change</p>
                                 </div>
                                 <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20">
-                                  <p className="text-muted-foreground mb-1">To {isLoss ? "Gain" : "Lose"}</p>
-                                  <p className="font-bold text-sm">{calculatedTDEE - dailyCalorieAdjustment} cal/day</p>
-                                  <p className="text-muted-foreground mt-1">
-                                    {isLoss ? `${Math.abs(dailyCalorieAdjustment)} surplus` : `${Math.abs(dailyCalorieAdjustment)} deficit`}
-                                  </p>
+                                  <p className="text-muted-foreground mb-1">To Gain Muscle</p>
+                                  <p className="font-bold text-sm">{gainCalories} cal/day</p>
+                                  <p className="text-muted-foreground mt-1">+300 cal surplus</p>
                                 </div>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                ✓ To {isLoss ? "lose" : "gain"} {Math.abs(weightChange)}kg in {timeframeDays} {timeframeUnit}, consume {targetCalories} calories per day
-                              </p>
+                              
+                              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                                <p className="font-semibold text-sm mb-2">Your Custom Goal Plan</p>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  To {isLoss ? 'lose' : 'gain'} {Math.abs(weightChange).toFixed(1)}kg in {timeframeDays} {timeframeUnit}
+                                </p>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs">Daily Target:</span>
+                                  <span className="font-bold text-primary">{customCalories} cal/day</span>
+                                </div>
+                                <div className="flex items-center justify-between mt-1">
+                                  <span className="text-xs">Daily {isLoss ? 'Deficit' : 'Surplus'}:</span>
+                                  <span className="text-xs font-medium">{Math.abs(dailyCalorieAdjustment)} calories</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         );
