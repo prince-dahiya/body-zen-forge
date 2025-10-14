@@ -14,6 +14,7 @@ import HIIT from "./pages/HIIT";
 import Runs from "./pages/Runs";
 import Calories from "./pages/Calories";
 import Settings from "./pages/Settings";
+import SevenMinuteWorkout from "./pages/SevenMinuteWorkout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/runs" element={<AuthGuard><Runs /></AuthGuard>} />
             <Route path="/calories" element={<AuthGuard><Calories /></AuthGuard>} />
             <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+            <Route path="/7-minute-workout" element={<AuthGuard><SevenMinuteWorkout /></AuthGuard>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

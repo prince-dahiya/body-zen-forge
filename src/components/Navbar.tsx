@@ -74,6 +74,10 @@ export const Navbar = () => {
                   45 Minute HIIT
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/7-minute-workout")}>
+                  <Play className="h-4 w-4 mr-2" />
+                  7-Minute Workout
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/exercises")}>
                   View All Exercises
                 </DropdownMenuItem>
